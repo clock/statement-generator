@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #111827;
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+  --accent: #f3f4f6;
+  --accent-foreground: #111827;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #2563eb;
+  --background: #ffffff;
+  --foreground: #111827;
+}
+
+#statement-content {
+  background-color: white;
+  color: #111827;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+#statement-content * {
+  color: inherit;
+}
+
+#statement-content .whitespace-nowrap {
+  white-space: nowrap !important;
+}
+
+#statement-content table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#statement-content th,
+#statement-content td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+#statement-content th {
+  background-color: #2563eb !important;
+  color: white !important;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#statement-content tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+#statement-content .bg-gray-100 {
+  background-color: #f3f4f6 !important;
+}
+
+#statement-content .bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+
+#statement-content .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+#statement-content .text-blue-600 {
+  color: #2563eb !important;
+}
+
+#statement-content .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+#statement-content .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+#statement-content .border-gray-200 {
+  border-color: #e5e7eb !important;
+}
+
+#statement-content .border-gray-300 {
+  border-color: #d1d5db !important;
+}
+
+#statement-content .border-gray-400 {
+  border-color: #9ca3af !important;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print\\:border-0 {
+    border-width: 0 !important;
+  }
+
+  .hidden.md\\:block {
+    display: block !important;
+  }
+  
+  .md\\:hidden {
+    display: none !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  .text-gray-600 {
+    color: #374151 !important;
+  }
+
+  .text-gray-500 {
+    color: #6B7280 !important;
+  }
+
+  .bg-gray-50 {
+    background-color: white !important;
+  }
+  
+  #statement-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  #statement-content .p-4 {
+    padding: 0 !important;
+  }
+}
