@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/fileupload.tsx","./src/components/statementdisplay.tsx","./src/components/ui/button.tsx","./src/components/ui/card.tsx","./src/components/ui/table.tsx","./src/lib/csv-processor.tsx","./src/lib/pdf-generator.tsx","./src/lib/utils.ts","./src/types/types.ts"],"version":"5.8.3"}

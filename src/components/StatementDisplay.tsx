@@ -1,13 +1,4 @@
-import { StatementData } from '@/types';
-import { Card } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { StatementData } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, Zap } from 'lucide-react';
 import { generatePDF } from '@/lib/pdf-generator';

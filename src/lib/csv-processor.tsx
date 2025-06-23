@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { ChargingSession, UserSummary, StatementTotals, StatementData } from '@/types';
+import { ChargingSession, UserSummary, StatementTotals, StatementData } from '@/types/types';
 
 export function parseDriverInfo(driverInfo: string): { email?: string; rfid?: string } {
   const rfidMatch = driverInfo.match(/RFID:\s*(\d+)/);

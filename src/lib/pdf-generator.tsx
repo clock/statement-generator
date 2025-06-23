@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { StatementData } from '@/types';
+import { StatementData } from '@/types/types';
 
 export async function generatePDF(
   elementId: string, 

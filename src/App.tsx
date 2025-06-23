@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { StatementDisplay } from '@/components/StatementDisplay';
 import { processCSV } from '@/lib/csv-processor';
-import { StatementData } from '@/types';
+import { StatementData } from '@/types/types';
 import { Card } from '@/components/ui/card';
 import { FileSpreadsheet, AlertCircle } from 'lucide-react';
 
