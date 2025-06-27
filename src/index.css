@@ -46,7 +46,7 @@
 }
 
 #statement-content th {
-  background-color: #2563eb !important;
+  background-color: #f97316 !important;
   color: white !important;
   font-weight: 500;
   white-space: nowrap;
@@ -65,11 +65,11 @@
 }
 
 #statement-content .bg-blue-600 {
-  background-color: #2563eb !important;
+  background-color: #f97316 !important;
 }
 
 #statement-content .text-blue-600 {
-  color: #2563eb !important;
+  color: #f97316 !important;
 }
 
 #statement-content .text-gray-600 {

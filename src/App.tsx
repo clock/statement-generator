@@ -4,55 +4,54 @@ import { StatementDisplay } from '@/components/StatementDisplay';
 import { processCSV } from '@/lib/csv-processor';
 import { StatementData } from '@/types/types';
 import { Card } from '@/components/ui/card';
-import { FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 function App() {
-  const [statementData, setStatementData] = useState<StatementData | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [statement_data, set_statement_data] = useState<StatementData | null>(null);
+  const [is_processing, set_is_processing] = useState(false);
+  const [error, set_error] = useState<string | null>(null);
 
-  const handleFileUpload = async (file: File) => {
-    setIsProcessing(true);
-    setError(null);
+  const handle_file_upload = async (file: File) => {
+    set_is_processing(true);
+    set_error(null);
     
     try {
       const data = await processCSV(file);
-      setStatementData(data);
+      set_statement_data(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process file');
+      set_error(err instanceof Error ? err.message : 'Failed to process file');
     } finally {
-      setIsProcessing(false);
+      set_is_processing(false);
     }
   };
 
-  const handleReset = () => {
-    setStatementData(null);
-    setError(null);
+  const handle_reset = () => {
+    set_statement_data(null);
+    set_error(null);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
+        {/* header */}
         <div className="text-center mb-6 md:mb-8">
           <div className="flex items-center justify-center mb-4">
-            <FileSpreadsheet className="w-8 h-8 md:w-12 md:h-12 text-primary mr-2 md:mr-3" />
-            <h1 className="text-2xl md:text-3xl font-bold">Noodoe Statement Generator</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-orange-500">noodoe</h1>
           </div>
           <p className="text-sm md:text-base text-gray-600">
-            Convert your Noodoe CSV charging data into professional statements
+            Statement Generator - Convert CSV/Excel charging data into professional statements
           </p>
         </div>
 
-        {/* Main Content */}
-        {!statementData ? (
+        {/* main content */}
+        {!statement_data ? (
           <div className="max-w-2xl mx-auto">
-            <FileUpload onFileUpload={handleFileUpload} />
+            <FileUpload onFileUpload={handle_file_upload} />
             
-            {isProcessing && (
+            {is_processing && (
               <Card className="mt-4 p-3 md:p-4">
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2 md:mr-3"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2 md:mr-3"></div>
                   <p className="text-sm md:text-base">Processing your file...</p>
                 </div>
               </Card>
@@ -70,7 +69,7 @@ function App() {
               </Card>
             )}
             
-            {/* Instructions */}
+            {/* instructions */}
             <Card className="mt-6 md:mt-8 p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold mb-3">How to use:</h2>
               <ol className="space-y-2 text-xs md:text-sm text-gray-600">
@@ -89,8 +88,8 @@ function App() {
                 
                 <div className="p-3 bg-amber-50 rounded-md">
                   <p className="text-xs md:text-sm text-amber-800">
-                    <strong>Note:</strong> User IDs from Noodoe are encoded. The statement will display
-                    these encoded IDs unless they contain recognizable email addresses or RFID numbers.
+                    <strong>Note:</strong> The statement will display driver information as provided in the CSV file.
+                    This may include encoded IDs, email addresses, or RFID numbers.
                   </p>
                 </div>
               </div>
@@ -100,13 +99,13 @@ function App() {
           <>
             <div className="mb-4 text-center print:hidden">
               <button
-                onClick={handleReset}
+                onClick={handle_reset}
                 className="text-xs md:text-sm text-gray-600 hover:text-gray-800 underline"
               >
                 ← Upload a different file
               </button>
             </div>
-            <StatementDisplay data={statementData} />
+            <StatementDisplay data={statement_data} />
           </>
         )}
       </div>

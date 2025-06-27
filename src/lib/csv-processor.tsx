@@ -1,44 +1,44 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { ChargingSession, UserSummary, StatementTotals, StatementData } from '@/types/types';
+import { ChargingSession, StatementTotals, StatementData } from '@/types/types';
 
-export function parseDriverInfo(driverInfo: string): { email?: string; rfid?: string } {
-  const rfidMatch = driverInfo.match(/RFID:\s*(\d+)/);
-  if (rfidMatch) {
-    return { rfid: rfidMatch[1] };
-  }
+export function parseDriverInfo(driver_info: string): { email?: string; rfid?: string } {
+  const rfid_match = driver_info.match(/RFID:\s*(\d+)/);
+  if (rfid_match) 
+    return { rfid: rfid_match[1] };
   
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (emailPattern.test(driverInfo)) {
-    return { email: driverInfo };
-  }
+  const email_pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (email_pattern.test(driver_info))
+    return { email: driver_info };
   
   return {};
 }
 
-async function parseExcelFile(file: File): Promise<ChargingSession[]> {
+async function parse_excel_file(file: File): Promise<ChargingSession[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
         
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        const sheet_name = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheet_name];
         
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        // get raw data to handle date conversions properly
+        const json_data = XLSX.utils.sheet_to_json(worksheet, {
           raw: false,
           dateNF: 'yyyy-mm-dd'
         });
         
-        const sessions = jsonData.map((row: any) => {
+        const sessions = json_data.map((row: any) => {
           const session: any = { ...row };
           
-          const numericFields = [
+          // handle numeric fields
+          const numeric_fields = [
             'Session Duration (Min)',
-            'Charging Duration (Min)',
+            'Charging Duration (Min)', 
             'Energy Delivered (kWh)',
             'Charging Fee',
             'Total Tax Owed',
@@ -47,13 +47,18 @@ async function parseExcelFile(file: File): Promise<ChargingSession[]> {
             'Payment Total'
           ];
           
-          numericFields.forEach(field => {
+          numeric_fields.forEach(field => {
             if (session[field] !== undefined && session[field] !== '-' && session[field] !== '') {
-              session[field] = parseFloat(session[field]) || 0;
+              const value = parseFloat(session[field]);
+              session[field] = isNaN(value) ? 0 : value;
             } else {
               session[field] = 0;
             }
           });
+          
+          // ensure session id exists
+          if (!session['Session ID'])
+            session['Session ID'] = '-';
           
           return session as ChargingSession;
         });
@@ -72,49 +77,35 @@ async function parseExcelFile(file: File): Promise<ChargingSession[]> {
   });
 }
 
-function processSessionsData(sessions: ChargingSession[]): StatementData {
-  const validSessions = sessions.filter(s => s['Driver Information'] && s['Driver Information'] !== '-');
+function generate_report_number(start_date: string): string {
+  const date = new Date(start_date);
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `USER-${year}${month}FTC`;
+}
+
+function process_sessions_data(sessions: ChargingSession[]): StatementData {
+  // filter sessions with valid data
+  const valid_sessions = sessions.filter(s => 
+    s['Session ID'] && 
+    s['Session ID'] !== '-'
+  );
   
-  const driverGroups = validSessions.reduce((acc, session) => {
-    const driver = session['Driver Information'] || 'Unknown';
-    if (!acc[driver]) {
-      acc[driver] = [];
-    }
-    acc[driver].push(session);
-    return acc;
-  }, {} as Record<string, ChargingSession[]>);
-  
-  const users: UserSummary[] = Object.entries(driverGroups).map(([driverInfo, userSessions]) => {
-    const { email, rfid } = parseDriverInfo(driverInfo);
-    
-    const summary: UserSummary = {
-      driverInfo,
-      email,
-      rfid,
-      region: userSessions[0]?.State || 'ON',
-      sessions: userSessions.length,
-      pluggedTime: userSessions.reduce((sum, s) => sum + (s['Session Duration (Min)'] || 0), 0) / 60,
-      chargingTime: userSessions.reduce((sum, s) => sum + (s['Charging Duration (Min)'] || 0), 0) / 60,
-      energy: userSessions.reduce((sum, s) => sum + (s['Energy Delivered (kWh)'] || 0), 0),
-      preTaxRevenue: userSessions.reduce((sum, s) => sum + (s['Charging Fee'] || 0), 0),
-      tax: userSessions.reduce((sum, s) => sum + (s['Total Tax Owed'] || 0), 0),
-      totalCollected: 0
-    };
-    
-    summary.totalCollected = summary.preTaxRevenue + summary.tax;
-    
-    return summary;
+  // sort sessions by date
+  valid_sessions.sort((a, b) => {
+    const date_a = new Date(a['Session Date']).getTime();
+    const date_b = new Date(b['Session Date']).getTime();
+    return date_a - date_b;
   });
   
-  users.sort((a, b) => b.sessions - a.sessions);
-  
+  // calculate totals
   const totals: StatementTotals = {
-    sessions: validSessions.length,
-    pluggedTime: users.reduce((sum, u) => sum + u.pluggedTime, 0),
-    chargingTime: users.reduce((sum, u) => sum + u.chargingTime, 0),
-    energy: users.reduce((sum, u) => sum + u.energy, 0),
-    preTaxRevenue: users.reduce((sum, u) => sum + u.preTaxRevenue, 0),
-    tax: users.reduce((sum, u) => sum + u.tax, 0),
+    sessions: valid_sessions.length,
+    pluggedTime: 0,
+    chargingTime: 0,
+    energy: 0,
+    preTaxRevenue: 0,
+    tax: 0,
     totalCollected: 0,
     transactionFee: 0,
     hstOnFee: 0,
@@ -122,47 +113,81 @@ function processSessionsData(sessions: ChargingSession[]): StatementData {
     netPayout: 0
   };
   
+  // sum up all values
+  valid_sessions.forEach(session => {
+    totals.pluggedTime += session['Session Duration (Min)'] || 0;
+    totals.chargingTime += session['Charging Duration (Min)'] || 0;
+    totals.energy += session['Energy Delivered (kWh)'] || 0;
+    totals.preTaxRevenue += session['Charging Fee'] || 0;
+    totals.tax += session['Total Tax Owed'] || 0;
+  });
+  
   totals.totalCollected = totals.preTaxRevenue + totals.tax;
   totals.transactionFee = totals.totalCollected * 0.05;
   totals.hstOnFee = totals.transactionFee * 0.13;
   totals.totalFees = totals.transactionFee + totals.hstOnFee;
   totals.netPayout = totals.totalCollected - totals.totalFees;
   
-  const dates = validSessions.map(s => s['Session Date']).filter(Boolean);
-  const startDate = dates.length > 0 ? dates.sort()[0] : new Date().toISOString().split('T')[0];
-  const endDate = dates.length > 0 ? dates.sort()[dates.length - 1] : new Date().toISOString().split('T')[0];
+  // get date range
+  const dates = valid_sessions
+    .map(s => s['Session Date'])
+    .filter(Boolean)
+    .map(d => new Date(d));
   
-  const site = validSessions[0]?.Site || 'Unknown Site';
+  const start_date = dates.length > 0 
+    ? dates.reduce((min, d) => d < min ? d : min)
+    : new Date();
+  const end_date = dates.length > 0 
+    ? dates.reduce((max, d) => d > max ? d : max)
+    : new Date();
   
-  const statementData: StatementData = {
+  // format dates as yyyy-mm-dd
+  const start_date_str = start_date.toISOString().split('T')[0];
+  const end_date_str = end_date.toISOString().split('T')[0];
+  
+  // get site info
+  const site = valid_sessions[0]?.CPO || 'Blue Stone Properties - Hyde Park Village Apartments';
+  
+  const statement_data: StatementData = {
     companyName: site,
-    reportNumber: `USER-${Date.now()}`,
-    startDate,
-    endDate,
-    users,
+    reportNumber: generate_report_number(start_date_str),
+    startDate: start_date_str,
+    endDate: end_date_str,
+    users: [], // not used in new format but keeping for compatibility
+    sessions: valid_sessions,
     totals
   };
   
-  return statementData;
+  return statement_data;
 }
 
 export async function processCSV(file: File): Promise<StatementData> {
-  const fileType = file.name.toLowerCase();
+  const file_type = file.name.toLowerCase();
   
-  if (fileType.endsWith('.xlsx') || fileType.endsWith('.xls')) {
-    const sessions = await parseExcelFile(file);
-    return processSessionsData(sessions);
+  if (file_type.endsWith('.xlsx') || file_type.endsWith('.xls')) {
+    const sessions = await parse_excel_file(file);
+    return process_sessions_data(sessions);
   } else {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
+        delimitersToGuess: [',', '\t', '|', ';'],
         complete: (results) => {
           try {
             const sessions = results.data as ChargingSession[];
-            const statementData = processSessionsData(sessions);
-            resolve(statementData);
+            
+            // handle csv date format if needed
+            sessions.forEach(session => {
+              if (session['Session Date'] && typeof session['Session Date'] === 'string') {
+                // ensure date is in proper format
+                session['Session Date'] = session['Session Date'];
+              }
+            });
+            
+            const statement_data = process_sessions_data(sessions);
+            resolve(statement_data);
           } catch (error) {
             reject(error);
           }

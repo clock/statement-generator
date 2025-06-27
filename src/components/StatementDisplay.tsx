@@ -1,167 +1,194 @@
 import { StatementData } from '@/types/types';
-import { Button } from '@/components/ui/button';
-import { Download, FileText, Zap } from 'lucide-react';
 import { generatePDF } from '@/lib/pdf-generator';
+import { Download, Printer } from 'lucide-react';
 
 interface StatementDisplayProps {
   data: StatementData;
 }
 
 export function StatementDisplay({ data }: StatementDisplayProps) {
-  const formatCurrency = (amount: number) => {
-    return amount.toFixed(2);
-  };
-
-  const formatNumber = (num: number, decimals: number = 2) => {
-    return num.toFixed(decimals);
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadPDF = async () => {
+  const handle_pdf_download = async () => {
     try {
       await generatePDF('statement-content', data);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      console.error('failed to generate pdf:', error);
     }
   };
 
-  const getUserDisplay = (user: typeof data.users[0]) => {
-    if (user.email) return user.email;
-    if (user.rfid) return `${user.rfid} (RFID)`;
-    return user.driverInfo;
+  const handle_print = () => {
+    window.print();
+  };
+
+  const format_currency = (amount: number) => {
+    if (amount === 0) return '$ -';
+    return `$ ${amount.toFixed(2)}`;
+  };
+
+  const format_hours = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    return `${hours}:${mins.toString().padStart(2, '0')} hrs`;
+  };
+
+  // evos fee is calculated per session at 5.65% (5% + 13% hst on the 5%)
+  const calculate_evos_fee = (total_collected: number) => {
+    if (total_collected === 0) return 0;
+    const transaction_fee = total_collected * 0.05;
+    const hst_on_fee = transaction_fee * 0.13;
+    return transaction_fee + hst_on_fee;
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Action buttons - outside the statement content */}
-      <div className="flex justify-end space-x-2 print:hidden">
-        <Button onClick={handlePrint} size="sm" variant="outline">
-          <FileText className="w-4 h-4 mr-2" />
-          Print
-        </Button>
-        <Button onClick={handleDownloadPDF} size="sm">
-          <Download className="w-4 h-4 mr-2" />
+    <>
+      <div className="mb-6 flex justify-center gap-4 print:hidden">
+        <button
+          onClick={handle_pdf_download}
+          className="flex items-center gap-2 px-4 py-2 text-white rounded transition-colors"
+          style={{ backgroundColor: '#f97316' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ea580c'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f97316'}
+        >
+          <Download className="w-4 h-4" />
           Download PDF
-        </Button>
+        </button>
+        <button
+          onClick={handle_print}
+          className="flex items-center gap-2 px-4 py-2 rounded transition-colors"
+          style={{ border: '1px solid #d1d5db' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <Printer className="w-4 h-4" />
+          Print
+        </button>
       </div>
-      
-      <div id="statement-content" className="bg-white">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center">
-              <Zap className="w-8 h-8 text-blue-600 mr-2" />
-              <span className="text-2xl font-bold">CHARGELAB</span>
-            </div>
-            <h1 className="text-2xl font-bold">TRANSACTION REPORT</h1>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-8 mb-8">
+
+      <div id="statement-content" className="bg-white max-w-[1400px] mx-auto p-8">
+        {/* header with noodoe branding */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="font-semibold">Customer:</p>
-              <p>{data.companyName}</p>
-              <p className="text-sm text-gray-600 mt-1">
-                {data.users[0]?.email || 'Customer Location'}
-              </p>
+              <h1 className="text-6xl font-bold" style={{ color: '#f97316' }}>noodoe</h1>
             </div>
             <div className="text-right">
-              <p><span className="font-semibold">Report Number:</span> {data.reportNumber}</p>
-              <p><span className="font-semibold">Start Date:</span> {data.startDate}</p>
-              <p><span className="font-semibold">End Date:</span> {data.endDate}</p>
+              <h2 className="text-2xl font-bold mb-3">TRANSACTION REPORT</h2>
+              <div className="text-sm space-y-1">
+                <div className="grid grid-cols-2 gap-4 text-right">
+                  <span className="font-semibold text-left">Report Number:</span>
+                  <span>{data.reportNumber}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-right">
+                  <span className="font-semibold text-left">Start Date:</span>
+                  <span>{new Date(data.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-right">
+                  <span className="font-semibold text-left">End Date:</span>
+                  <span>{new Date(data.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mb-8">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-blue-600 text-white">
-                  <th className="px-3 py-2 text-left font-medium">User</th>
-                  <th className="px-3 py-2 text-left font-medium">Region</th>
-                  <th className="px-3 py-2 text-right font-medium">Sessions</th>
-                  <th className="px-3 py-2 text-right font-medium">Plugged-in time</th>
-                  <th className="px-3 py-2 text-right font-medium">Charging Time*</th>
-                  <th className="px-3 py-2 text-right font-medium">Energy**</th>
-                  <th className="px-3 py-2 text-right font-medium">Pre-tax revenue</th>
-                  <th className="px-3 py-2 text-right font-medium">Tax</th>
-                  <th className="px-3 py-2 text-right font-medium">Total collected</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.users.map((user, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-3 py-2 text-left">{getUserDisplay(user)}</td>
-                    <td className="px-3 py-2 text-left">{user.region}</td>
-                    <td className="px-3 py-2 text-right">{user.sessions}</td>
-                    <td className="px-3 py-2 text-right">{formatNumber(user.pluggedTime)} hrs</td>
-                    <td className="px-3 py-2 text-right">{formatNumber(user.chargingTime)} hrs</td>
-                    <td className="px-3 py-2 text-right">{formatNumber(user.energy)} kWh</td>
-                    <td className="px-3 py-2 text-right">$ {formatCurrency(user.preTaxRevenue)}</td>
-                    <td className="px-3 py-2 text-right">$ {formatCurrency(user.tax)}</td>
-                    <td className="px-3 py-2 text-right">$ {formatCurrency(user.totalCollected)}</td>
+          <div className="mb-4">
+            <h3 className="font-semibold">Customer:</h3>
+            <p className="font-semibold">{data.companyName}</p>
+            <p className="text-sm" style={{ color: '#4b5563' }}>1600 Hyde Park Rd, London, ON N6H 0L5</p>
+          </div>
+        </div>
+
+        {/* main table */}
+        <div className="mb-6">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-white" style={{ backgroundColor: '#f97316' }}>
+                <th className="px-2 py-2 text-left font-semibold">Session ID</th>
+                <th className="px-2 py-2 text-center font-semibold">Region</th>
+                <th className="px-2 py-2 text-right font-semibold whitespace-nowrap">Plugged-in time</th>
+                <th className="px-2 py-2 text-right font-semibold">Charging Time*</th>
+                <th className="px-2 py-2 text-right font-semibold">Energy**</th>
+                <th className="px-2 py-2 text-right font-semibold">Pre-tax revenue</th>
+                <th className="px-2 py-2 text-right font-semibold">Tax</th>
+                <th className="px-2 py-2 text-right font-semibold">Total collected</th>
+                <th className="px-2 py-2 text-right font-semibold">EVOS Fees</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.sessions.map((session, index) => {
+                const total_collected = session['Charging Fee'] + session['Total Tax Owed'];
+                const evos_fee = calculate_evos_fee(total_collected);
+                return (
+                  <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
+                    <td className="px-2 py-1.5">{session['Session ID'] || '-'}</td>
+                    <td className="px-2 py-1.5 text-center">{session['State'] === 'Ontario' ? 'ON' : session['State'] || 'ON'}</td>
+                    <td className="px-2 py-1.5 text-right">{format_hours(session['Session Duration (Min)'] || 0)}</td>
+                    <td className="px-2 py-1.5 text-right">{(session['Charging Duration (Min)'] || 0).toFixed(2)} min</td>
+                    <td className="px-2 py-1.5 text-right">{(session['Energy Delivered (kWh)'] || 0).toFixed(3)} kWh</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(session['Charging Fee'] || 0)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(session['Total Tax Owed'] || 0)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(total_collected)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(evos_fee)}</td>
                   </tr>
-                ))}
-                <tr className="font-semibold bg-gray-100">
-                  <td colSpan={2} className="px-3 py-2">Monthly subtotal</td>
-                  <td className="px-3 py-2 text-right">{data.totals.sessions}</td>
-                  <td className="px-3 py-2 text-right">{formatNumber(data.totals.pluggedTime)} hrs</td>
-                  <td className="px-3 py-2 text-right">{formatNumber(data.totals.chargingTime)} hrs</td>
-                  <td className="px-3 py-2 text-right">{formatNumber(data.totals.energy)} kWh</td>
-                  <td className="px-3 py-2 text-right">$ {formatCurrency(data.totals.preTaxRevenue)}</td>
-                  <td className="px-3 py-2 text-right">$ {formatCurrency(data.totals.tax)}</td>
-                  <td className="px-3 py-2 text-right">$ {formatCurrency(data.totals.totalCollected)}</td>
-                </tr>
-              </tbody>
-            </table>
+                );
+              })}
+              {/* monthly subtotal row */}
+              <tr className="font-semibold" style={{ borderTop: '2px solid #9ca3af' }}>
+                <td colSpan={2} className="px-2 py-2">Monthly subtotal</td>
+                <td className="px-2 py-2 text-right">{format_hours(data.totals.pluggedTime)}</td>
+                <td className="px-2 py-2 text-right">{data.totals.chargingTime.toFixed(2)} min</td>
+                <td className="px-2 py-2 text-right">{data.totals.energy.toFixed(2)} kWh</td>
+                <td className="px-2 py-2 text-right">{format_currency(data.totals.preTaxRevenue)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(data.totals.tax)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(data.totals.totalCollected)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(data.totals.totalFees)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* summary section */}
+        <div className="flex justify-between gap-8">
+          <div className="text-xs space-y-1 max-w-md">
+            <p className="font-semibold mb-1">Notes:</p>
+            <p>Payments will be made monthly.</p>
+            <p>*Reflects the equivalent required time for the car to draw the kWh at a full "effective" charge rate.</p>
+            <p>**Energy usage is estimated and not based on utility-grade meters</p>
+            <p className="mt-3">All figures are in Canadian Dollars.</p>
           </div>
 
-          <div className="max-w-md ml-auto">
-            <div className="space-y-2">
-              <div className="flex justify-between py-1">
+          <div className="text-sm min-w-[200px]">
+            <div className="space-y-1 mb-3">
+              <div className="flex justify-between gap-8">
                 <span>Total collected</span>
-                <span>$ {formatCurrency(data.totals.totalCollected)}</span>
+                <span className="font-semibold text-right">{format_currency(data.totals.totalCollected)}</span>
               </div>
-              <div className="flex justify-between py-1 text-sm">
-                <span>ON HST 13.0%</span>
-                <span>-{formatCurrency(data.totals.tax)}</span>
+              <div className="flex justify-between">
+                <span className="text-xs">ON HST 13.0%</span>
+                <span className="text-right">-{format_currency(data.totals.tax)}</span>
               </div>
-              <div className="flex justify-between py-1 font-semibold border-t border-gray-300">
-                <span>Total taxes</span>
-                <span>-$ {formatCurrency(data.totals.tax)}</span>
-              </div>
-              <div className="flex justify-between py-1 mt-2">
-                <span>Transaction fee (5.0%)</span>
-                <span>-{formatCurrency(data.totals.transactionFee)}</span>
-              </div>
-              <div className="flex justify-between py-1 text-sm">
-                <span>ON HST 13.0% on transaction fee</span>
-                <span>-{formatCurrency(data.totals.hstOnFee)}</span>
-              </div>
-              <div className="flex justify-between py-1 font-semibold border-t border-gray-300">
-                <span>Total fees</span>
-                <span>-$ {formatCurrency(data.totals.totalFees)}</span>
-              </div>
-              <div className="flex justify-between py-2 text-lg font-bold border-t-2 border-gray-400 mt-2">
-                <span>Net payout</span>
-                <span>$ {formatCurrency(data.totals.netPayout)}</span>
+              <div className="flex justify-between border-b border-gray-400 pb-1">
+                <span className="font-semibold">Total Taxes</span>
+                <span className="font-semibold text-right">-{format_currency(data.totals.tax)}</span>
               </div>
             </div>
-          </div>
+            
+            <div className="space-y-1 mb-3">
+              <div className="flex justify-between">
+                <span className="text-xs">EVOS Fees</span>
+                <span className="text-right">-{format_currency(data.totals.transactionFee)}</span>
+              </div>
+              <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #9ca3af' }}>
+                <span className="font-semibold">Total fees</span>
+                <span className="font-semibold text-right">-{format_currency(data.totals.totalFees)}</span>
+              </div>
+            </div>
 
-          {/* Notes */}
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-600 italic text-center mb-4">All figures are in Canadian Dollars.</p>
-            <div className="text-xs text-gray-600">
-              <p className="font-semibold mb-1">Notes:</p>
-              <p>Payments will be made monthly.</p>
-              <p>*Reflects the equivalent required time for the car to draw the kWh at a full "effective" charge rate.</p>
-              <p>**Energy usage is estimated and not based on utility-grade meters.</p>
+            <div className="flex justify-between text-base font-bold pt-1">
+              <span>Net payout</span>
+              <span className="text-right">{format_currency(data.totals.netPayout)}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
