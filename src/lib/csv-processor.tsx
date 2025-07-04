@@ -44,7 +44,8 @@ async function parse_excel_file(file: File): Promise<ChargingSession[]> {
             'Total Tax Owed',
             'My Revenue',
             'Subtotal',
-            'Payment Total'
+            'Payment Total',
+            'EV OS Fee Total'
           ];
           
           numeric_fields.forEach(field => {
@@ -113,19 +114,21 @@ function process_sessions_data(sessions: ChargingSession[]): StatementData {
     netPayout: 0
   };
   
-  // sum up all values
+  // sum up all values from actual session data
   valid_sessions.forEach(session => {
     totals.pluggedTime += session['Session Duration (Min)'] || 0;
     totals.chargingTime += session['Charging Duration (Min)'] || 0;
     totals.energy += session['Energy Delivered (kWh)'] || 0;
     totals.preTaxRevenue += session['Charging Fee'] || 0;
     totals.tax += session['Total Tax Owed'] || 0;
+    totals.totalCollected += session['Payment Total'] || 0;
+    // sum actual evos fees from each session instead of calculating percentage
+    totals.transactionFee += session['EV OS Fee Total'] || 0;
   });
   
-  totals.totalCollected = totals.preTaxRevenue + totals.tax;
-  totals.transactionFee = totals.totalCollected * 0.05;
-  totals.hstOnFee = totals.transactionFee * 0.13;
-  totals.totalFees = totals.transactionFee + totals.hstOnFee;
+  // no hst on evos fees based on pdf examples
+  totals.hstOnFee = 0;
+  totals.totalFees = totals.transactionFee; // just the evos fees
   totals.netPayout = totals.totalCollected - totals.totalFees;
   
   // get date range

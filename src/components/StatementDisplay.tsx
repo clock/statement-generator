@@ -30,14 +30,6 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
     return `${hours}:${mins.toString().padStart(2, '0')} hrs`;
   };
 
-  // evos fee is calculated per session at 5.65% (5% + 13% hst on the 5%)
-  const calculate_evos_fee = (total_collected: number) => {
-    if (total_collected === 0) return 0;
-    const transaction_fee = total_collected * 0.05;
-    const hst_on_fee = transaction_fee * 0.13;
-    return transaction_fee + hst_on_fee;
-  };
-
   return (
     <>
       <div className="mb-6 flex justify-center gap-4 print:hidden">
@@ -114,8 +106,11 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
             </thead>
             <tbody>
               {data.sessions.map((session, index) => {
-                const total_collected = session['Charging Fee'] + session['Total Tax Owed'];
-                const evos_fee = calculate_evos_fee(total_collected);
+                const charging_fee = session['Charging Fee'] || 0;
+                const tax_owed = session['Total Tax Owed'] || 0;
+                const payment_total = session['Payment Total'] || 0;
+                const evos_fee = session['EV OS Fee Total'] || 0;
+                
                 return (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
                     <td className="px-2 py-1.5">{session['Session ID'] || '-'}</td>
@@ -123,9 +118,9 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
                     <td className="px-2 py-1.5 text-right">{format_hours(session['Session Duration (Min)'] || 0)}</td>
                     <td className="px-2 py-1.5 text-right">{(session['Charging Duration (Min)'] || 0).toFixed(2)} min</td>
                     <td className="px-2 py-1.5 text-right">{(session['Energy Delivered (kWh)'] || 0).toFixed(3)} kWh</td>
-                    <td className="px-2 py-1.5 text-right">{format_currency(session['Charging Fee'] || 0)}</td>
-                    <td className="px-2 py-1.5 text-right">{format_currency(session['Total Tax Owed'] || 0)}</td>
-                    <td className="px-2 py-1.5 text-right">{format_currency(total_collected)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(charging_fee)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(tax_owed)}</td>
+                    <td className="px-2 py-1.5 text-right">{format_currency(payment_total)}</td>
                     <td className="px-2 py-1.5 text-right">{format_currency(evos_fee)}</td>
                   </tr>
                 );
@@ -139,7 +134,7 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
                 <td className="px-2 py-2 text-right">{format_currency(data.totals.preTaxRevenue)}</td>
                 <td className="px-2 py-2 text-right">{format_currency(data.totals.tax)}</td>
                 <td className="px-2 py-2 text-right">{format_currency(data.totals.totalCollected)}</td>
-                <td className="px-2 py-2 text-right">{format_currency(data.totals.totalFees)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(data.totals.transactionFee)}</td>
               </tr>
             </tbody>
           </table>
@@ -178,7 +173,7 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
               </div>
               <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #9ca3af' }}>
                 <span className="font-semibold">Total fees</span>
-                <span className="font-semibold text-right">-{format_currency(data.totals.totalFees)}</span>
+                <span className="font-semibold text-right">-{format_currency(data.totals.transactionFee)}</span>
               </div>
             </div>
 
