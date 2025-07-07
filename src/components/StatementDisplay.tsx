@@ -1,6 +1,7 @@
 import { StatementData } from '@/types/types';
 import { generatePDF } from '@/lib/pdf-generator';
-import { Download, Printer } from 'lucide-react';
+import { generate_excel } from '@/lib/excel-exporter';
+import { Download, Printer, FileSpreadsheet } from 'lucide-react';
 
 interface StatementDisplayProps {
   data: StatementData;
@@ -12,6 +13,14 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
       await generatePDF('statement-content', data);
     } catch (error) {
       console.error('failed to generate pdf:', error);
+    }
+  };
+
+  const handle_excel_download = () => {
+    try {
+      generate_excel(data);
+    } catch (error) {
+      console.error('failed to generate excel:', error);
     }
   };
 
@@ -30,6 +39,15 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
     return `${hours}:${mins.toString().padStart(2, '0')} hrs`;
   };
 
+  const format_date = (date_string: string) => {
+    const date = new Date(date_string);
+    return date.toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: 'numeric' 
+    });
+  };
+
   return (
     <>
       <div className="mb-6 flex justify-center gap-4 print:hidden">
@@ -42,6 +60,16 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
         >
           <Download className="w-4 h-4" />
           Download PDF
+        </button>
+        <button
+          onClick={handle_excel_download}
+          className="flex items-center gap-2 px-4 py-2 text-white rounded transition-colors"
+          style={{ backgroundColor: '#059669' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#047857'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Download Excel
         </button>
         <button
           onClick={handle_print}
@@ -94,6 +122,7 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
             <thead>
               <tr className="text-white" style={{ backgroundColor: '#f97316' }}>
                 <th className="px-2 py-2 text-left font-semibold">Session ID</th>
+                <th className="px-2 py-2 text-center font-semibold">Date</th>
                 <th className="px-2 py-2 text-center font-semibold">Region</th>
                 <th className="px-2 py-2 text-right font-semibold whitespace-nowrap">Plugged-in time</th>
                 <th className="px-2 py-2 text-right font-semibold">Charging Time*</th>
@@ -114,6 +143,7 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
                 return (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
                     <td className="px-2 py-1.5">{session['Session ID'] || '-'}</td>
+                    <td className="px-2 py-1.5 text-center">{format_date(session['Session Date'])}</td>
                     <td className="px-2 py-1.5 text-center">{session['State'] === 'Ontario' ? 'ON' : session['State'] || 'ON'}</td>
                     <td className="px-2 py-1.5 text-right">{format_hours(session['Session Duration (Min)'] || 0)}</td>
                     <td className="px-2 py-1.5 text-right">{(session['Charging Duration (Min)'] || 0).toFixed(2)} min</td>
@@ -127,7 +157,7 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
               })}
               {/* monthly subtotal row */}
               <tr className="font-semibold" style={{ borderTop: '2px solid #9ca3af' }}>
-                <td colSpan={2} className="px-2 py-2">Monthly subtotal</td>
+                <td colSpan={3} className="px-2 py-2">Monthly subtotal</td>
                 <td className="px-2 py-2 text-right">{format_hours(data.totals.pluggedTime)}</td>
                 <td className="px-2 py-2 text-right">{data.totals.chargingTime.toFixed(2)} min</td>
                 <td className="px-2 py-2 text-right">{data.totals.energy.toFixed(2)} kWh</td>
