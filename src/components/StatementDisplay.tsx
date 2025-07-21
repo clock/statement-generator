@@ -28,9 +28,10 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
     window.print();
   };
 
-  const format_currency = (amount: number) => {
-    if (amount === 0) return '$ -';
-    return `$ ${amount.toFixed(2)}`;
+  const format_currency = (amount: any) => {
+    const num_amount = parseFloat(amount) || 0;
+    if (num_amount === 0) return '$ -';
+    return `$ ${num_amount.toFixed(2)}`;
   };
 
   const format_hours = (minutes: number) => {
@@ -46,6 +47,10 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
       day: '2-digit', 
       year: 'numeric' 
     });
+  };
+
+  const safe_number = (value: any) => {
+    return parseFloat(value) || 0;
   };
 
   return (
@@ -135,19 +140,19 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
             </thead>
             <tbody>
               {data.sessions.map((session, index) => {
-                const charging_fee = session['Charging Fee'] || 0;
-                const tax_owed = session['Total Tax Owed'] || 0;
-                const payment_total = session['Payment Total'] || 0;
-                const evos_fee = session['EV OS Fee Total'] || 0;
+                const charging_fee = safe_number(session['Charging Fee']);
+                const tax_owed = safe_number(session['Total Tax Owed']);
+                const payment_total = safe_number(session['Payment Total']);
+                const evos_fee = safe_number(session['EV OS Fee Total']);
                 
                 return (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
                     <td className="px-2 py-1.5">{session['Session ID'] || '-'}</td>
                     <td className="px-2 py-1.5 text-center">{format_date(session['Session Date'])}</td>
                     <td className="px-2 py-1.5 text-center">{session['State'] === 'Ontario' ? 'ON' : session['State'] || 'ON'}</td>
-                    <td className="px-2 py-1.5 text-right">{format_hours(session['Session Duration (Min)'] || 0)}</td>
-                    <td className="px-2 py-1.5 text-right">{(session['Charging Duration (Min)'] || 0).toFixed(2)} min</td>
-                    <td className="px-2 py-1.5 text-right">{(session['Energy Delivered (kWh)'] || 0).toFixed(3)} kWh</td>
+                    <td className="px-2 py-1.5 text-right">{format_hours(safe_number(session['Session Duration (Min)']))}</td>
+                    <td className="px-2 py-1.5 text-right">{safe_number(session['Charging Duration (Min)']).toFixed(2)} min</td>
+                    <td className="px-2 py-1.5 text-right">{safe_number(session['Energy Delivered (kWh)']).toFixed(3)} kWh</td>
                     <td className="px-2 py-1.5 text-right">{format_currency(charging_fee)}</td>
                     <td className="px-2 py-1.5 text-right">{format_currency(tax_owed)}</td>
                     <td className="px-2 py-1.5 text-right">{format_currency(payment_total)}</td>
