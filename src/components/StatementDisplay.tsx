@@ -50,8 +50,45 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
   };
 
   const safe_number = (value: any) => {
+    if (value === null || value === undefined || value === '' || value === '-') return 0;
+    // handle string values with currency symbols, commas, etc.
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[$,\s]/g, '');
+      return parseFloat(cleaned) || 0;
+    }
     return parseFloat(value) || 0;
   };
+
+  // calculate totals from session data
+  const calculated_totals = data.sessions.reduce((totals, session) => {
+    const session_duration = safe_number(session['Session Duration (Min)']);
+    const charging_duration = safe_number(session['Charging Duration (Min)']);
+    const energy = safe_number(session['Energy Delivered (kWh)']);
+    const charging_fee = safe_number(session['Charging Fee']);
+    const tax_owed = safe_number(session['Total Tax Owed']);
+    const payment_total = safe_number(session['Payment Total']);
+    const evos_fee = safe_number(session['EV OS Fee Total']);
+
+    return {
+      plugged_time: totals.plugged_time + session_duration,
+      charging_time: totals.charging_time + charging_duration,
+      energy: totals.energy + energy,
+      pre_tax_revenue: totals.pre_tax_revenue + charging_fee,
+      tax: totals.tax + tax_owed,
+      total_collected: totals.total_collected + payment_total,
+      transaction_fee: totals.transaction_fee + evos_fee
+    };
+  }, {
+    plugged_time: 0,
+    charging_time: 0,
+    energy: 0,
+    pre_tax_revenue: 0,
+    tax: 0,
+    total_collected: 0,
+    transaction_fee: 0
+  });
+
+  const net_payout = calculated_totals.total_collected - calculated_totals.tax - calculated_totals.transaction_fee;
 
   return (
     <>
@@ -163,13 +200,13 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
               {/* monthly subtotal row */}
               <tr className="font-semibold" style={{ borderTop: '2px solid #9ca3af' }}>
                 <td colSpan={3} className="px-2 py-2">Monthly subtotal</td>
-                <td className="px-2 py-2 text-right">{format_hours(data.totals.pluggedTime)}</td>
-                <td className="px-2 py-2 text-right">{data.totals.chargingTime.toFixed(2)} min</td>
-                <td className="px-2 py-2 text-right">{data.totals.energy.toFixed(2)} kWh</td>
-                <td className="px-2 py-2 text-right">{format_currency(data.totals.preTaxRevenue)}</td>
-                <td className="px-2 py-2 text-right">{format_currency(data.totals.tax)}</td>
-                <td className="px-2 py-2 text-right">{format_currency(data.totals.totalCollected)}</td>
-                <td className="px-2 py-2 text-right">{format_currency(data.totals.transactionFee)}</td>
+                <td className="px-2 py-2 text-right">{format_hours(calculated_totals.plugged_time)}</td>
+                <td className="px-2 py-2 text-right">{calculated_totals.charging_time.toFixed(2)} min</td>
+                <td className="px-2 py-2 text-right">{calculated_totals.energy.toFixed(2)} kWh</td>
+                <td className="px-2 py-2 text-right">{format_currency(calculated_totals.pre_tax_revenue)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(calculated_totals.tax)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(calculated_totals.total_collected)}</td>
+                <td className="px-2 py-2 text-right">{format_currency(calculated_totals.transaction_fee)}</td>
               </tr>
             </tbody>
           </table>
@@ -189,32 +226,32 @@ export function StatementDisplay({ data }: StatementDisplayProps) {
             <div className="space-y-1 mb-3">
               <div className="flex justify-between gap-8">
                 <span>Total collected</span>
-                <span className="font-semibold text-right">{format_currency(data.totals.totalCollected)}</span>
+                <span className="font-semibold text-right">{format_currency(calculated_totals.total_collected)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs">ON HST 13.0%</span>
-                <span className="text-right">-{format_currency(data.totals.tax)}</span>
+                <span className="text-right">-{format_currency(calculated_totals.tax)}</span>
               </div>
               <div className="flex justify-between border-b border-gray-400 pb-1">
                 <span className="font-semibold">Total Taxes</span>
-                <span className="font-semibold text-right">-{format_currency(data.totals.tax)}</span>
+                <span className="font-semibold text-right">-{format_currency(calculated_totals.tax)}</span>
               </div>
             </div>
             
             <div className="space-y-1 mb-3">
               <div className="flex justify-between">
                 <span className="text-xs">EVOS Fees</span>
-                <span className="text-right">-{format_currency(data.totals.transactionFee)}</span>
+                <span className="text-right">-{format_currency(calculated_totals.transaction_fee)}</span>
               </div>
               <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #9ca3af' }}>
                 <span className="font-semibold">Total fees</span>
-                <span className="font-semibold text-right">-{format_currency(data.totals.transactionFee)}</span>
+                <span className="font-semibold text-right">-{format_currency(calculated_totals.transaction_fee)}</span>
               </div>
             </div>
 
             <div className="flex justify-between text-base font-bold pt-1">
               <span>Net payout</span>
-              <span className="text-right">{format_currency(data.totals.netPayout)}</span>
+              <span className="text-right">{format_currency(net_payout)}</span>
             </div>
           </div>
         </div>
